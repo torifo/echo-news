@@ -29,40 +29,39 @@ echo-news --quota
 
 ## APIキーの設定
 
-echo-news には2つのレベルのAPIキー管理があります．
-
-### レベル1: 共有キー（デフォルト）
-
-インストール後すぐに使えますが，開発者の共有APIキーを使うため以下の制限があります．
-
-| プロバイダ | 共有利用の上限 | 自分のキーを設定した場合 |
-|-----------|-------------|----------------------|
-| GNews | 5回/日 | 100回/日 |
-| Currents | 1回/日 | 20回/日 |
-
-### レベル2: 自分のAPIキーを設定（推奨）
-
-自分のAPIキーを登録すると制限が大幅に緩和されます．
+### ステップ1: `.env` を作成（クローン直後にこれだけでOK）
 
 ```bash
-# APIキーを設定
+cp .env.example .env
+```
+
+`.env.example` には共有キーがあらかじめ入っています．そのままコピーするだけで動作します．
+
+> **共有キーの制限:** GNews 5回/日，Currents 1回/日
+
+### ステップ2（任意）: 自分のAPIキーを登録して制限を緩和
+
+自分のキーを取得して登録すると，制限がフルになります．
+
+| プロバイダ | 共有キー上限 | 自分のキー上限 | 取得先 |
+|-----------|------------|-------------|--------|
+| GNews | 5回/日 | 100回/日 | https://gnews.io/ |
+| Currents | 1回/日 | 20回/日 | https://currentsapi.services/ |
+
+```bash
 echo-news config set-key gnews <あなたのキー>
 echo-news config set-key currents <あなたのキー>
+```
 
-# 現在の設定と使用状況を確認
+キーは `~/.config/echo-news/config.json` にローカル保存されます（リポジトリには含まれません）．
+
+```bash
+# 現在の設定と残りリクエスト数を確認
 echo-news config show
 
 # キーを削除して共有キーに戻す
 echo-news config remove-key gnews
 ```
-
-**APIキーの取得先:**
-| プロバイダ | 登録URL |
-|-----------|--------|
-| GNews | https://gnews.io/ |
-| Currents | https://currentsapi.services/ |
-
-キーは `~/.config/echo-news/config.json` にローカル保存されます（リポジトリには含まれません）．
 
 ---
 
