@@ -54,6 +54,26 @@ export function printSummary(count: number): void {
   console.log(chalk.gray(`\n  ${count}件を表示\n`));
 }
 
+/** UTC 0時までの残り時間を「Xh Ym」形式で返す */
+function hoursUntilUTCMidnight(): string {
+  const now  = new Date();
+  const next = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1));
+  const ms   = next.getTime() - now.getTime();
+  const h    = Math.floor(ms / 3_600_000);
+  const m    = Math.floor((ms % 3_600_000) / 60_000);
+  return `${h}h ${m}m`;
+}
+
+/** ローカル 0時までの残り時間を「Xh Ym」形式で返す */
+function hoursUntilLocalMidnight(): string {
+  const now  = new Date();
+  const next = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+  const ms   = next.getTime() - now.getTime();
+  const h    = Math.floor(ms / 3_600_000);
+  const m    = Math.floor((ms % 3_600_000) / 60_000);
+  return `${h}h ${m}m`;
+}
+
 export function printQuota(usage: UsageInfo, source: string): void {
   const lines: string[] = ['\n  今日の残りリクエスト数:'];
 
@@ -61,21 +81,22 @@ export function printQuota(usage: UsageInfo, source: string): void {
     const limit = TOTAL_LIMITS.gnews;
     const rem   = limit - usage.gnews.used;
     const color = rem <= 10 ? chalk.red : rem <= 30 ? chalk.yellow : chalk.green;
-    lines.push(`    GNews    : ${color(`${rem}/${limit}`)} ${chalk.gray('(ローカル計測・UTC 0時リセット)')}`);
+    const reset = rem <= 30 ? chalk.gray(` ※ リセットまで ${hoursUntilUTCMidnight()}`) : '';
+    lines.push(`    GNews    : ${color(`${rem}/${limit}`)} ${chalk.gray('(ローカル計測・UTC 0時リセット)')}${reset}`);
   }
 
   if (source === 'currents' || source === 'all') {
     const { apiRemaining, apiLimit, used } = usage.currents;
     if (apiRemaining !== undefined && apiLimit !== undefined) {
-      // API実測値を使用
       const color = apiRemaining <= 3 ? chalk.red : apiRemaining <= 7 ? chalk.yellow : chalk.green;
-      lines.push(`    Currents : ${color(`${apiRemaining}/${apiLimit}`)} ${chalk.gray('(API実測値)')}`);
+      const reset = apiRemaining <= 7 ? chalk.gray(` ※ リセットまで ${hoursUntilLocalMidnight()}`) : '';
+      lines.push(`    Currents : ${color(`${apiRemaining}/${apiLimit}`)} ${chalk.gray('(API実測値)')}${reset}`);
     } else {
-      // フォールバック: ローカルカウント
       const limit = TOTAL_LIMITS.currents;
       const rem   = limit - used;
       const color = rem <= 3 ? chalk.red : rem <= 7 ? chalk.yellow : chalk.green;
-      lines.push(`    Currents : ${color(`${rem}/${limit}`)} ${chalk.gray('(ローカル計測)')}`);
+      const reset = rem <= 7 ? chalk.gray(` ※ リセットまで ${hoursUntilLocalMidnight()}`) : '';
+      lines.push(`    Currents : ${color(`${rem}/${limit}`)} ${chalk.gray('(ローカル計測)')}${reset}`);
     }
   }
 
