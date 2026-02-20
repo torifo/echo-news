@@ -12,16 +12,29 @@ export const TOTAL_LIMITS  = { gnews: 100, currents: 20 } as const;
 
 interface ProviderQuota { date: string; count: number }
 
+interface CurrentsApiQuota extends ProviderQuota {
+  /** Currents API レスポンスヘッダーから取得した実際の残りリクエスト数 */
+  apiRemaining?: number;
+  /** Currents API レスポンスヘッダーから取得した日次上限 */
+  apiLimit?: number;
+}
+
 interface QuotaData {
   gnews:    ProviderQuota;
-  currents: ProviderQuota;
+  currents: CurrentsApiQuota;
   shared: {
     gnews:    ProviderQuota;
     currents: ProviderQuota;
   };
 }
 
-function today(): string {
+/** GNews は UTC 0時リセット */
+function todayUTC(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+/** ローカル日時（Currents API の共有制限判定・表示用） */
+function todayLocal(): string {
   const d = new Date();
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, '0');
@@ -30,13 +43,12 @@ function today(): string {
 }
 
 function defaultQuota(): QuotaData {
-  const td = today();
   return {
-    gnews:    { date: td, count: 0 },
-    currents: { date: td, count: 0 },
+    gnews:    { date: todayUTC(),   count: 0 },
+    currents: { date: todayLocal(), count: 0 },
     shared: {
-      gnews:    { date: td, count: 0 },
-      currents: { date: td, count: 0 },
+      gnews:    { date: todayUTC(),   count: 0 },
+      currents: { date: todayLocal(), count: 0 },
     },
   };
 }
@@ -44,10 +56,11 @@ function defaultQuota(): QuotaData {
 function load(): QuotaData {
   if (!existsSync(QUOTA_FILE)) return defaultQuota();
   const raw = JSON.parse(readFileSync(QUOTA_FILE, 'utf-8')) as Partial<QuotaData>;
-  // shared フィールドが旧バージョンにない場合のマイグレーション
   if (!raw.shared) {
-    const td = today();
-    raw.shared = { gnews: { date: td, count: 0 }, currents: { date: td, count: 0 } };
+    raw.shared = {
+      gnews:    { date: todayUTC(),   count: 0 },
+      currents: { date: todayLocal(), count: 0 },
+    };
   }
   return raw as QuotaData;
 }
@@ -57,9 +70,8 @@ function save(data: QuotaData): void {
   writeFileSync(QUOTA_FILE, JSON.stringify(data, null, 2), 'utf-8');
 }
 
-function resetIfNewDay(q: ProviderQuota): ProviderQuota {
-  const td = today();
-  return q.date === td ? q : { date: td, count: 0 };
+function resetIfNewDay(q: ProviderQuota, dateKey: string): ProviderQuota {
+  return q.date === dateKey ? q : { date: dateKey, count: 0 };
 }
 
 /**
@@ -67,38 +79,72 @@ function resetIfNewDay(q: ProviderQuota): ProviderQuota {
  * isOwn=false（共有キー利用）の場合は shared カウントも加算．
  */
 export function increment(provider: 'gnews' | 'currents', isOwn: boolean): void {
-  const data = load();
-  data[provider] = resetIfNewDay(data[provider]);
+  const data  = load();
+  const dateKey = provider === 'gnews' ? todayUTC() : todayLocal();
+
+  data[provider] = resetIfNewDay(data[provider], dateKey);
   data[provider].count += 1;
 
   if (!isOwn) {
-    data.shared[provider] = resetIfNewDay(data.shared[provider]);
+    data.shared[provider] = resetIfNewDay(data.shared[provider], dateKey);
     data.shared[provider].count += 1;
   }
   save(data);
 }
 
 /**
+ * Currents API レスポンスヘッダーの実際の残数を保存する．
+ */
+export function storeCurrentsRateLimit(remaining: number, limit: number): void {
+  const data = load();
+  const dateKey = todayLocal();
+  data.currents = resetIfNewDay(data.currents, dateKey) as CurrentsApiQuota;
+  (data.currents as CurrentsApiQuota).apiRemaining = remaining;
+  (data.currents as CurrentsApiQuota).apiLimit     = limit;
+  save(data);
+}
+
+/**
  * 共有キーでのリクエストが今日の上限内か確認する．
- * isOwn=true のユーザは常に true を返す（制限なし）．
  */
 export function isSharedAllowed(provider: 'gnews' | 'currents', isOwn: boolean): boolean {
   if (isOwn) return true;
-  const data = load();
-  const q = resetIfNewDay(data.shared[provider]);
+  const data    = load();
+  const dateKey = provider === 'gnews' ? todayUTC() : todayLocal();
+  const q       = resetIfNewDay(data.shared[provider], dateKey);
   return q.count < SHARED_LIMITS[provider];
 }
 
 export function getSharedUsed(provider: 'gnews' | 'currents'): number {
-  const data = load();
-  const q = resetIfNewDay(data.shared[provider]);
-  return q.count;
+  const data    = load();
+  const dateKey = provider === 'gnews' ? todayUTC() : todayLocal();
+  return resetIfNewDay(data.shared[provider], dateKey).count;
 }
 
-export function getUsage(): { gnews: number; currents: number } {
-  const data = load();
+export interface UsageInfo {
+  gnews: {
+    used:  number; // ローカルカウント（近似値）
+  };
+  currents: {
+    used:       number;          // ローカルカウント
+    apiRemaining?: number;       // API実測値（あれば優先）
+    apiLimit?:     number;
+  };
+}
+
+export function getUsage(): UsageInfo {
+  const data    = load();
+  const gDate   = todayUTC();
+  const cDate   = todayLocal();
+  const gq      = resetIfNewDay(data.gnews,    gDate);
+  const cq      = resetIfNewDay(data.currents, cDate) as CurrentsApiQuota;
+
   return {
-    gnews:    resetIfNewDay(data.gnews).count,
-    currents: resetIfNewDay(data.currents).count,
+    gnews:    { used: gq.count },
+    currents: {
+      used:         cq.count,
+      apiRemaining: cq.apiRemaining,
+      apiLimit:     cq.apiLimit,
+    },
   };
 }

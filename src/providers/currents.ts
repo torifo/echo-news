@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { Article, FetchOptions } from '../types';
 import { BaseProvider } from './base';
+import { storeCurrentsRateLimit } from '../quota';
 
 interface CurrentsArticle {
   id: string;
@@ -40,6 +41,13 @@ export class CurrentsProvider extends BaseProvider {
       `${CurrentsProvider.BASE_URL}${endpoint}`,
       { params }
     );
+
+    // X-RateLimit-Remaining / X-RateLimit-Limit ヘッダーを保存
+    const remaining = parseInt(response.headers['x-ratelimit-remaining'] ?? '', 10);
+    const limit2    = parseInt(response.headers['x-ratelimit-limit']     ?? '', 10);
+    if (!isNaN(remaining) && !isNaN(limit2)) {
+      storeCurrentsRateLimit(remaining, limit2);
+    }
 
     return response.data.news
       .slice(0, limit)

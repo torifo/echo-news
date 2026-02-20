@@ -5,7 +5,7 @@ import { Command } from 'commander';
 import ora from 'ora';
 import { NewsAggregator } from './aggregator';
 import { printArticle, printJson, printSummary, printQuota, printConfigStatus, printError } from './formatter';
-import { getUsage, isSharedAllowed, getSharedUsed, SHARED_LIMITS } from './quota';
+import { getUsage, isSharedAllowed, getSharedUsed, SHARED_LIMITS, TOTAL_LIMITS } from './quota';
 import { loadConfig, setKey, removeKey, maskKey } from './config';
 
 // グローバル実行時も dist/ の隣の .env を読む（開発者のデフォルトキー）
@@ -54,8 +54,8 @@ configCmd
       userCfg.gnewsApiKey,
       userCfg.currentsApiKey,
       maskKey,
-      usage.gnews,
-      usage.currents,
+      usage.gnews.used,
+      usage.currents.apiRemaining ?? (TOTAL_LIMITS.currents - usage.currents.used),
       getSharedUsed('gnews'),
       getSharedUsed('currents'),
     );
@@ -90,7 +90,7 @@ program
     // --quota のみ表示して終了
     if (options.quota) {
       const usage = getUsage();
-      printQuota(usage.gnews, usage.currents, 'all');
+      printQuota(usage, 'all');
       return;
     }
 
@@ -198,7 +198,7 @@ program
         articles.forEach((a, i) => printArticle(a, i + 1, options.url));
         printSummary(articles.length);
         const usage = getUsage();
-        printQuota(usage.gnews, usage.currents, source);
+        printQuota(usage, source);
       }
 
     } catch (err) {

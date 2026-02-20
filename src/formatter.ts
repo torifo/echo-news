@@ -1,5 +1,6 @@
 import chalk from 'chalk';
 import { Article } from './types';
+import { UsageInfo, TOTAL_LIMITS } from './quota';
 
 const SEPARATOR = chalk.gray('━'.repeat(56));
 
@@ -53,25 +54,31 @@ export function printSummary(count: number): void {
   console.log(chalk.gray(`\n  ${count}件を表示\n`));
 }
 
-export function printQuota(
-  gnewsUsed: number,
-  currentsUsed: number,
-  source: string
-): void {
-  const GNEWS_LIMIT = 100;
-  const CURRENTS_LIMIT = 20;
-
+export function printQuota(usage: UsageInfo, source: string): void {
   const lines: string[] = ['\n  今日の残りリクエスト数:'];
+
   if (source === 'gnews' || source === 'all') {
-    const rem = GNEWS_LIMIT - gnewsUsed;
-    const bar = rem <= 10 ? chalk.red : rem <= 30 ? chalk.yellow : chalk.green;
-    lines.push(`    GNews    : ${bar(`${rem}/${GNEWS_LIMIT}`)}`);
+    const limit = TOTAL_LIMITS.gnews;
+    const rem   = limit - usage.gnews.used;
+    const color = rem <= 10 ? chalk.red : rem <= 30 ? chalk.yellow : chalk.green;
+    lines.push(`    GNews    : ${color(`${rem}/${limit}`)} ${chalk.gray('(ローカル計測・UTC 0時リセット)')}`);
   }
+
   if (source === 'currents' || source === 'all') {
-    const rem = CURRENTS_LIMIT - currentsUsed;
-    const bar = rem <= 3 ? chalk.red : rem <= 7 ? chalk.yellow : chalk.green;
-    lines.push(`    Currents : ${bar(`${rem}/${CURRENTS_LIMIT}`)}`);
+    const { apiRemaining, apiLimit, used } = usage.currents;
+    if (apiRemaining !== undefined && apiLimit !== undefined) {
+      // API実測値を使用
+      const color = apiRemaining <= 3 ? chalk.red : apiRemaining <= 7 ? chalk.yellow : chalk.green;
+      lines.push(`    Currents : ${color(`${apiRemaining}/${apiLimit}`)} ${chalk.gray('(API実測値)')}`);
+    } else {
+      // フォールバック: ローカルカウント
+      const limit = TOTAL_LIMITS.currents;
+      const rem   = limit - used;
+      const color = rem <= 3 ? chalk.red : rem <= 7 ? chalk.yellow : chalk.green;
+      lines.push(`    Currents : ${color(`${rem}/${limit}`)} ${chalk.gray('(ローカル計測)')}`);
+    }
   }
+
   console.log(chalk.gray(lines.join('\n')) + '\n');
 }
 
