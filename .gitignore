@@ -3,3 +3,13 @@ dist/
 .env
 *.js.map
 spec/
+
+# ログ・一時ファイル
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.tgz
+
+# OS
+.DS_Store
+Thumbs.db
