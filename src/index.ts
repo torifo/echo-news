@@ -1,4 +1,7 @@
 #!/usr/bin/env node
+import dns from 'dns';
+dns.setDefaultResultOrder('ipv4first');
+
 import path from 'path';
 import { config } from 'dotenv';
 import { Command } from 'commander';
