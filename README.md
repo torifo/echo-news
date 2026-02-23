@@ -2,6 +2,8 @@
 
 複数のニュースAPIから情報を集約し，重複を排除してターミナル上で表示するCLIツール．
 
+> デモ GIF は[こちら](#デモ)から確認できます．
+
 ## インストール
 
 ```bash
@@ -11,16 +13,6 @@ npm install
 npm run build
 npm link
 ```
-
-## デモ
-
-**Windows（/mnt/c/ 経由）から実行**
-![windows demo](./demo/windows.gif)
-
-**WSL2 から全機能デモ**
-![wsl demo](./demo/wsl.gif)
-
----
 
 ## クイックスタート
 
@@ -158,6 +150,22 @@ echo-news config show
 - 赤: ほぼ上限
 
 カウントは `~/.config/echo-news/quota.json` にローカル保存され，日付が変わると自動リセットされます．
+
+---
+
+## デモ
+
+**Windows（/mnt/c/ 経由）から実行**
+
+![Windows demo](./demo/windows.gif)
+
+**WSL2 から全機能デモ**
+
+![WSL demo](./demo/wsl.gif)
+
+**Windows + WSL2 連続デモ**
+
+![Combined demo](./demo/combined.gif)
 
 ---
 
