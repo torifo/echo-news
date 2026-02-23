@@ -88,6 +88,7 @@ GET https://gnews.io/api/v4/top-headlines?lang=ja&max=10&apikey={GNEWS_API_KEY}
 
 ## 実装ノート
 
+- **無料プランは最大12時間の記事遅延あり．** リアルタイム配信には有料プランが必要（`realTimeArticles` フィールドで通知される）．
 - 無料プランでは `max` は10が上限，日100リクエストまで．Currentsより余裕があるが無駄なリクエストは避けること．
 - `content` フィールドは本文全体ではなく，先頭数百字のみ含まれる場合がある．
 - `publishedAt` は UTC の ISO 8601形式で返却される．

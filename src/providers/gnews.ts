@@ -35,9 +35,8 @@ export class GNewsProvider extends BaseProvider {
     if (from)    params['from']    = from;
     if (to)      params['to']      = to;
 
-    const response = await axios.get<GNewsResponse>(
-      `${GNewsProvider.BASE_URL}${endpoint}`,
-      { params }
+    const response = await this.withRetry(() =>
+      axios.get<GNewsResponse>(`${GNewsProvider.BASE_URL}${endpoint}`, { params })
     );
 
     return response.data.articles.map((raw) => this.normalize(raw));

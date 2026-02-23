@@ -37,9 +37,8 @@ export class CurrentsProvider extends BaseProvider {
     if (from)     params['start_date'] = from;
     if (to)       params['end_date']   = to;
 
-    const response = await axios.get<CurrentsResponse>(
-      `${CurrentsProvider.BASE_URL}${endpoint}`,
-      { params }
+    const response = await this.withRetry(() =>
+      axios.get<CurrentsResponse>(`${CurrentsProvider.BASE_URL}${endpoint}`, { params })
     );
 
     // X-RateLimit-Remaining / X-RateLimit-Limit ヘッダーを保存

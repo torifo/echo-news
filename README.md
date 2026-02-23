@@ -164,9 +164,12 @@ npm run build
 npm run clean
 ```
 
+## 備考
+
+- **GNews 無料プランは最大12時間の記事遅延があります．** リアルタイム配信は有料プランが必要です．
+- Currents はリアルタイム配信に対応しています．
+
 ## ドキュメント
 
 - [GNews API リファレンス](./docs/gnews-api.md)
 - [Currents API リファレンス](./docs/currents-api.md)
-- [要件定義書](./spec/requirements.md)
-- [設計書](./spec/design.md)
