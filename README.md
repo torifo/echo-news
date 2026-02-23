@@ -12,6 +12,16 @@ npm run build
 npm link
 ```
 
+## デモ
+
+**Windows（/mnt/c/ 経由）から実行**
+![windows demo](./demo/windows.gif)
+
+**WSL2 から全機能デモ**
+![wsl demo](./demo/wsl.gif)
+
+---
+
 ## クイックスタート
 
 ```bash
