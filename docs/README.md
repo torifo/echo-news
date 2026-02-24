@@ -19,13 +19,3 @@
 ```bash
 cp .env.example .env
 ```
-
-## 仕様書
-
-実装の仕様については `spec/` ディレクトリを参照してください．
-
-| ファイル | 内容 |
-|---------|------|
-| [spec/requirements.md](../spec/requirements.md) | 要件定義書 |
-| [spec/design.md](../spec/design.md) | 設計書 |
-| [spec/tasks.md](../spec/tasks.md) | タスクリスト |
